@@ -9,3 +9,35 @@ datasource db {
     provider = "postgresql"
 }
 
+
+model ProcessConfig {
+    id                   String   @id @default(ulid())
+    academicPeriod       String   @unique @map("academic_period")       // "periodoAcademico" (Ej: "2026-02")
+    totalRealStudents    Int      @map("total_real_students")           // "totalAlumnosReal"
+    draftStartDate       DateTime @map("draft_start_date")              // "fechaInicioBorrador"
+    draftEndDate         DateTime @map("draft_end_date")                // "fechaFinBorrador"
+    startDate            DateTime @map("start_date")                    // "fechaInicio de toma de ramos"
+    endDate              DateTime @map("end_date")                      // "fechaFin de toma de ramos"
+    dailyStartHour       Int      @map("daily_start_hour")              // "horaInicioDiaria toma de ramos" (Ej: 9)
+    dailyEndHour         Int      @map("daily_end_hour")                // "horaFinDiaria toma de ramos" (Ej: 14)
+
+    createdAt            DateTime @default(now()) @map("created_at")    // "createdAt"
+    updatedAt            DateTime @updatedAt @map("updated_at")         // "updatedAt"
+
+    @@map("process_configs")
+}
+
+
+model Student {
+    id               String   @id @default(ulid())
+    rut              String   @unique                                   // "rut"
+    fullName         String   @map("full_name")                         // "nombre"
+    email            String   @unique                                   // "correo"
+    priorityStartAt  DateTime @map("priority_start_at")                 // "prioridadInicio" (Timestamp IP)
+    maxCreditsLimit  Int      @default(30) @map("max_credits_limit")    // "limiteCreditosMax"
+
+    createdAt        DateTime @default(now()) @map("created_at")        // "createdAt"
+    updatedAt        DateTime @updatedAt @map("updated_at")             // "updatedAt"
+
+    @@map("students")
+}
