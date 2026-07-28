@@ -10,42 +10,16 @@ datasource db {
 }
 
 
-enum ProcessStatus {
-    PENDING
-    OPENED
-    CLOSED
-}
-
-
-model ProcessConfig {
-    id                String   @id @default(ulid())
-    academicPeriod    String   @unique @map("academic_period")       // "periodoAcademico" (Ej: "2026-02")
-    status            ProcessStatus @default(PENDING) // "estado"
-    totalRealStudents Int      @map("total_real_students")           // "totalAlumnosReal"
-    draftStartDate    DateTime @map("draft_start_date")              // "fechaInicioBorrador"
-    draftEndDate      DateTime @map("draft_end_date")                // "fechaFinBorrador"
-    startDate         DateTime @map("start_date")                    // "fechaInicio de toma de ramos"
-    endDate           DateTime @map("end_date")                      // "fechaFin de toma de ramos"
-    dailyStartHour    Int      @map("daily_start_hour")              // "horaInicioDiaria toma de ramos" (Ej: 9)
-    dailyEndHour      Int      @map("daily_end_hour")                // "horaFinDiaria toma de ramos" (Ej: 14)
-
-    createdAt         DateTime @default(now()) @map("created_at")    // "createdAt"
-    updatedAt         DateTime @updatedAt @map("updated_at")         // "updatedAt"
-
-    @@map("process_configs")
-}
-
-
 model Student {
     id              String   @id @default(ulid())
-    rut             String   @unique                                   // "rut"
-    fullName        String   @map("full_name")                         // "nombre"
-    email           String   @unique                                   // "correo"
-    priorityStartAt DateTime @map("priority_start_at")                 // "prioridadInicio" (Timestamp IP)
-    maxCreditsLimit Int      @default( 30 ) @map("max_credits_limit")  // "limiteCreditosMax"
+    rut             String   @unique                                    // "rut"
+    fullName        String   @map("full_name")                          // "nombre"
+    email           String   @unique                                    // "correo"
+    priorityStartAt DateTime @map("priority_start_at")                  // "prioridadInicio" (Timestamp IP)
+    maxCreditsLimit Int      @default( 30 ) @map("max_credits_limit")   // "limiteCreditosMax"
 
-    createdAt       DateTime @default(now()) @map("created_at")        // "createdAt"
-    updatedAt       DateTime @updatedAt @map("updated_at")             // "updatedAt"
+    createdAt       DateTime @default(now()) @map("created_at")         // "createdAt"
+    updatedAt       DateTime @updatedAt @map("updated_at")              // "updatedAt"
 
     studyPlanTemplates StudyPlanTemplate[]
     enrollments        Enrollment[]
@@ -55,10 +29,10 @@ model Student {
 
 
 enum PeriodStatus {
-    Pending // Aún no comienza el periodo en startDate
-    InProgress //EN progreso cuando startdate < now < endDate
-    Opened //Abierto cuando openingDate < now < endDate
-    Closed //Cerrado cuando endDate === now
+    Pending     // Aún no comienza el periodo en startDate
+    InProgress  //EN progreso cuando startdate < now < endDate
+    Opened      //Abierto cuando openingDate < now < endDate
+    Closed      //Cerrado cuando endDate === now
 }
 
 
@@ -67,6 +41,7 @@ enum PeriodType {
     TRIMESTRAL
     SEMESTRAL
     VERANO
+    BIMESTRAL
 }
 
 
@@ -83,12 +58,44 @@ model Period {
     type            PeriodType      @default(SEMESTRAL)
 
     sections        Section[]
+    processConfig   ProcessConfig?
 
     createdAt DateTime  @default(now()) @map("created_at")            // "createdAt"
     updatedAt DateTime  @updatedAt @map("updated_at")                 // "updatedAt"
 
     @@index([name])
     @@map("periods")
+}
+
+
+enum ProcessStatus {
+    PENDING
+    PLANNING_STAGE
+    ENROLLMENT_STAGE
+    CLOSED
+}
+
+
+model ProcessConfig {
+    id                  String   @id @default(ulid())
+
+    periodId            String @unique @map("period_id")
+    period              Period @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+    status              ProcessStatus @default(PENDING)               // "estado"
+
+    totalRealStudents   Int? @default(0)      @map("total_real_students")          // "totalAlumnosReal"
+
+    planningStartDate   DateTime @map("planning_start_date")          // "fechaInicioBorrador"
+    planningEndDate     DateTime @map("planning_end_date")            // "fechaFinBorrador"
+
+    enrollmentStartDate DateTime @map("enrollment_start_date")        // "fechaInicio de toma de ramos"
+    enrollmentEndDate   DateTime @map("enrollment_end_date")          // "fechaFin de toma de ramos"
+
+    createdAt           DateTime @default(now()) @map("created_at")   // "createdAt"
+    updatedAt           DateTime @updatedAt @map("updated_at")        // "updatedAt"
+
+    @@map("process_configs")
 }
 
 
@@ -160,22 +167,22 @@ model Module {
 
 
 model Subject {
-    id              String @id
-    name            String @unique
-    isActive        Boolean @default( true ) @map("is_active")
-    spaceType       SpaceType? @map("space_type")
-    quota           Int? @default( 0 )
+    id              String      @id
+    name            String      @unique
+    isActive        Boolean     @default( true ) @map("is_active")
+    spaceType       SpaceType?  @map("space_type")
+    quota           Int?        @default( 0 )
     description     String?
 
-    spaceSizeId     SizeValue? @map("space_size_id")
-    spaceSize       Size? @relation(fields: [spaceSizeId], references: [id])
+    spaceSizeId     SizeValue?  @map("space_size_id")
+    spaceSize       Size?       @relation(fields: [spaceSizeId], references: [id])
 
     // workshop        Int @default( 0 )   // Taller
     // lecture         Int @default( 0 )   // Cátedra
     // tutoringSession Int @default( 0 )   // Ayudantía
     // laboratory      Int @default( 0 )   // Laboratorio
 
-    sections Section[]
+    sections        Section[]
 
     createdAt       DateTime         @default(now()) @map("created_at")    // "createdAt"
     updatedAt       DateTime         @updatedAt @map("updated_at")         // "updatedAt"
@@ -246,8 +253,8 @@ model Session {
     studyPlanDetails    StudyPlanDetail[]
     enrollments         Enrollment[]
 
-    createdAt       DateTime         @default(now()) @map("created_at")    // "createdAt"
-    updatedAt       DateTime         @updatedAt @map("updated_at")         // "updatedAt"
+    createdAt           DateTime    @default(now()) @map("created_at")    // "createdAt"
+    updatedAt           DateTime    @updatedAt @map("updated_at")         // "updatedAt"
 
     @@map("sessions")
 }
@@ -355,17 +362,17 @@ enum EnrollmentStatus {
 
 
 model Enrollment {
-    id        String           @id @default(ulid())
-    ticketId  String           @unique @map("ticket_id")              // "ticketId" (Correlativo Fast-Path/SSE)
-    status    EnrollmentStatus @default( PROCESSING ) @map("status")  // "estado"
-    createdAt DateTime         @default(now()) @map("created_at")     // "fecha"
+    id          String              @id @default(ulid())
+    ticketId    String              @unique @map("ticket_id")              // "ticketId" (Correlativo Fast-Path/SSE)
+    status      EnrollmentStatus    @default( PROCESSING ) @map("status")  // "estado"
+    createdAt   DateTime            @default(now()) @map("created_at")     // "fecha"
 
     // Relaciones / Relations
-    sessionId           String            @map("session_id")
-    session             Session           @relation(fields: [ sessionId ], references: [ id ])
+    sessionId   String              @map("session_id")
+    session     Session             @relation(fields: [ sessionId ], references: [ id ])
 
-    studentId           String            @map("student_id")                    // "alumnoId"
-    student             Student           @relation(fields: [ studentId ], references: [ id ])
+    studentId   String              @map("student_id")                    // "alumnoId"
+    student     Student             @relation(fields: [ studentId ], references: [ id ])
 
     @@map("enrollments")
 }
