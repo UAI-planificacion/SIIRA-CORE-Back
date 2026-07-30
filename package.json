@@ -68,6 +68,16 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^@prisma/prisma\\.service$": "<rootDir>/prisma/prisma.service",
+      "^@generated/(.*)$": "<rootDir>/generated/$1",
+      "^@config/(.*)$": "<rootDir>/config/$1",
+      "^@common/(.*)$": "<rootDir>/common/$1",
+      "^@services/(.*)$": "<rootDir>/services/$1",
+      "^@seed/(.*)$": "<rootDir>/seed/$1",
+      "^@study-plan/(.*)$": "<rootDir>/study-plan/$1",
+      "^@app/(.*)$": "<rootDir>/$1"
+    },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
