@@ -18,13 +18,14 @@
         "strictBindCallApply": false,
         "noFallthroughCasesInSwitch": false,
         "paths": {
-            "@app/*"            : ["./src/*"],
+            "@app/*"        : ["./src/*"],
 			"@config/*"		: [ "./src/config/*" ],
 			"@common/*"		: [ "./src/common/*" ],
 			"@services/*"	: [ "./src/services/*" ],
 			"@prisma/*"		: [ "./src/prisma/*" ],
 			"@seed/*"		: [ "./src/seed/*" ],
 			"@generated/*"	: [ "./src/generated/*" ],
+			"@study-plan/*": [ "./src/study-plan/*" ],
         }
     }
 }
