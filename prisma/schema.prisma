@@ -23,6 +23,10 @@ model Student {
 
     studyPlanTemplates StudyPlanTemplate[]
     enrollments        Enrollment[]
+    subjectHistories   StudentSubjectHistory[]
+
+    careerId String @map("career_id")
+    career   Career @relation(fields: [careerId], references: [id])
 
     @@map("students")
 }
@@ -59,6 +63,7 @@ model Period {
 
     sections        Section[]
     processConfig   ProcessConfig?
+    history         StudentSubjectHistory[]
 
     createdAt DateTime  @default(now()) @map("created_at")            // "createdAt"
     updatedAt DateTime  @updatedAt @map("updated_at")                 // "updatedAt"
@@ -166,12 +171,49 @@ model Module {
 }
 
 
+model Career {
+    id        String   @id @default(ulid())
+    name      String                                    // Ej: "Ingeniería Civil en Informática"
+    code      String   @unique                          // Ej: "ICI-INF"
+
+    // Relaciones
+    students    Student[]
+    planSubjects CareerPlanSubject[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("careers")
+}
+
+
+model CareerPlanSubject {
+    id             String   @id @default(ulid())
+    careerId       String   @map("career_id")
+    subjectId      String   @map("subject_id")
+    semesterNumber Int      @map("semester_number")    // 1 a 12 (En qué semestre de esta carrera va)
+    isRequired     Boolean  @default(true) @map("is_required") // Obligatorio u Optativo/Electivo
+
+    // Relaciones
+    career  Career  @relation(fields: [careerId], references: [id])
+    subject Subject @relation(fields: [subjectId], references: [id])
+
+    prerequisites  String[] @default([]) @map("prerequisites")
+
+    createdAt      DateTime @default(now()) @map("created_at")
+    updatedAt      DateTime @updatedAt @map("updated_at")
+
+    @@unique([careerId, subjectId])                   // Un ramo no se repite dos veces en la misma carrera
+    @@map("career_plan_subjects")
+}
+
+
 model Subject {
     id              String      @id
     name            String      @unique
     isActive        Boolean     @default( true ) @map("is_active")
     spaceType       SpaceType?  @map("space_type")
-    quota           Int?        @default( 0 )
+    credits         Int         @default( 3 )
     description     String?
 
     spaceSizeId     SizeValue?  @map("space_size_id")
@@ -183,6 +225,8 @@ model Subject {
     // laboratory      Int @default( 0 )   // Laboratorio
 
     sections        Section[]
+    careers         CareerPlanSubject[]
+    history         StudentSubjectHistory[]
 
     createdAt       DateTime         @default(now()) @map("created_at")    // "createdAt"
     updatedAt       DateTime         @updatedAt @map("updated_at")         // "updatedAt"
@@ -192,18 +236,41 @@ model Subject {
 }
 
 
-enum SessionCode {
-    C
-    A
-    T
-    L
+enum SubjectStatus {
+    APPROVED   // Aprobado
+    FAILED     // Reprobado
+    IN_PROGRESS // Cursando actualmente
+    CREDITED   // Convalidado / Homologado
+}
+
+
+model StudentSubjectHistory {
+    id              String        @id @default(ulid())
+    status          SubjectStatus @default(IN_PROGRESS)
+    finalGrade      Float?        @map("final_grade")      // Nota final (Ej: 5.5, opcional)
+
+    // Relaciones
+    periodId        String        @map("period_id")
+    period          Period        @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+    studentId       String        @map("student_id")
+    student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+    subjectId       String        @map("subject_id")
+    subject         Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+    createdAt       DateTime      @default(now()) @map("created_at")
+    updatedAt       DateTime      @updatedAt @map("updated_at")
+
+    // Un alumno no debería tener dos registros para el mismo ramo en el MISMO período
+    @@unique([studentId, subjectId, periodId])
+    @@map("student_subject_history")
 }
 
 
 model Section {
     id              String @id @default(ulid())
     code            Int
-    semester        Int?
     isClosed        Boolean     @default(false) @map("is_closed")
     groupId         String      @map("group_id")
     startDate       DateTime    @map("start_date")
@@ -233,6 +300,14 @@ model Section {
 }
 
 
+enum SessionCode {
+    C // Cátedra
+    A // Ayudantía
+    T // Taller
+    L // Laboratorio
+}
+
+
 model Session {
     id                  String      @id @default(ulid())
     name                SessionCode
@@ -240,6 +315,7 @@ model Session {
     chairsAvailable     Int?        @map("chairs_available")
     isEnglish           Boolean     @default( false ) @map("is_english")
     date                DateTime
+    quota               Int     @default( 30 )
 
     sectionId           String      @map("section_id")
     section             Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
