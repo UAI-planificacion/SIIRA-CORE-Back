@@ -126,12 +126,13 @@ export class StudyPlanService {
 					quota	        : section.quota,
 					periodId        : section.periodId,
 					sessions        : section.sessions.map( ( session ) => ( {
-						id				: session.id,
+                        id				: session.id,
 						name			: session.name,
 						chairsAvailable	: session.chairsAvailable,
 						isEnglish		: session.isEnglish,
 						date			: session.date,
 						quota			: session.quota,
+                        spaceId         : session.spaceId,
 						professor		: session.professor
 							? {
 								id		: session.professor.id,

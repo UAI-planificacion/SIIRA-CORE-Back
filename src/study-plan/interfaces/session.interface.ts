@@ -10,4 +10,5 @@ export interface ISession {
 	professor		: IProfessor | null;
 	module			: IModule;
     quota           : number;
+    spaceId         : string | null;
 }
