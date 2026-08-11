@@ -1,14 +1,19 @@
 import {
 	Controller,
 	Get,
+	Post,
 	Param,
 	Query,
-    ParseBoolPipe,
+	Body,
+	HttpCode,
+	HttpStatus,
+	ParseBoolPipe,
 }                               from '@nestjs/common';
 import { ApiQuery, ApiTags }    from '@nestjs/swagger';
 
 import { StudyPlanService }             from '@study-plan/study-plan.service';
 import { IStudentCurriculumResponse }   from '@study-plan/interfaces/student.interface';
+import { NotifyEnrollmentDto }          from './dto/notify-enrollment.dto';
 
 
 @ApiTags( 'Study Plan' )
@@ -26,5 +31,35 @@ export class StudyPlanController {
 	): Promise<IStudentCurriculumResponse> {
 		return this.studyPlanService.getCurriculumByEmail( email, !!activePeriod );
 	}
+
+
+	@Post( 'subscribe/:sessionId/:studentId' )
+	@HttpCode( HttpStatus.ACCEPTED )
+	subscribe(
+		@Param( 'sessionId' ) sessionId: string,
+		@Param( 'studentId' ) studentId: string,
+	): Promise<{ ticketId: string }> {
+		return this.studyPlanService.subscribeStudent( studentId, sessionId );
+	}
+
+
+	@Post( 'unsubscribe/:sessionId/:studentId' )
+	@HttpCode( HttpStatus.ACCEPTED )
+	unsubscribe(
+		@Param( 'sessionId' ) sessionId: string,
+		@Param( 'studentId' ) studentId: string,
+	): Promise<{ ticketId: string }> {
+		return this.studyPlanService.unsubscribeStudent( studentId, sessionId );
+	}
+
+
+	@Post( 'notify-enrollment' )
+	@HttpCode( HttpStatus.OK )
+	notifyEnrollment(
+		@Body() notifyDto: NotifyEnrollmentDto,
+	): Promise<{ success: boolean }> {
+		return this.studyPlanService.handleEnrollmentNotification( notifyDto );
+	}
+
 
 }
