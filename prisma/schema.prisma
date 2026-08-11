@@ -315,7 +315,7 @@ model Session {
     chairsAvailable     Int?        @map("chairs_available")
     isEnglish           Boolean     @default( false ) @map("is_english")
     date                DateTime
-    quota               Int     @default( 30 )
+    quota               Int         @default( 30 )
 
     sectionId           String      @map("section_id")
     section             Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
