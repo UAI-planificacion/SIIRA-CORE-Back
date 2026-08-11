@@ -25,7 +25,8 @@
 			"@prisma/*"		: [ "./src/prisma/*" ],
 			"@seed/*"		: [ "./src/seed/*" ],
 			"@generated/*"	: [ "./src/generated/*" ],
-			"@study-plan/*": [ "./src/study-plan/*" ],
+			"@study-plan/*" : [ "./src/study-plan/*" ],
+			"@queue/*"      : [ "./src/queue/*" ],
         }
     }
 }
