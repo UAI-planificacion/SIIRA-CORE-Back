@@ -1,15 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { ulid }                          from 'ulid';
+
 import { PrismaService }                from '@prisma/prisma.service';
 import { IStudentCurriculumResponse }   from '@study-plan/interfaces/student.interface';
 import { ISubject }                     from '@study-plan/interfaces/subject.interface';
 import { ISemesterGroup }               from '@study-plan/interfaces/semester-group.interface';
+import { QueueProducerService }         from '@queue/queue-producer.service';
+import { NotifyEnrollmentDto }          from './dto/notify-enrollment.dto';
 
 
 @Injectable()
 export class StudyPlanService {
 
-	constructor( private readonly prisma: PrismaService ) {}
+	constructor(
+		private readonly prisma        : PrismaService,
+		private readonly queueProducer : QueueProducerService,
+	) {}
 
 
 	async getCurriculumByEmail(
@@ -174,4 +181,71 @@ export class StudyPlanService {
 		};
 	}
 
+
+	async subscribeStudent(
+		studentId : string,
+		sessionId : string,
+	): Promise<{ ticketId: string }> {
+		const session = await this.prisma.session.findUnique( {
+			where   : { id : sessionId },
+			include : {
+				section : {
+					select : {
+						periodId : true,
+					},
+				},
+			},
+		} );
+
+		if ( !session ) {
+			throw new NotFoundException( `No se encontró la sesión con ID: ${ sessionId }` );
+		}
+
+		const periodId = session.section.periodId;
+		const ticketId = ulid();
+
+		await this.queueProducer.enqueueEnrollment( studentId, periodId, ticketId, sessionId );
+
+		return { ticketId };
+	}
+
+
+	async unsubscribeStudent(
+		studentId : string,
+		sessionId : string,
+	): Promise<{ ticketId: string }> {
+		const session = await this.prisma.session.findUnique( {
+			where   : { id : sessionId },
+			include : {
+				section : {
+					select : {
+						periodId : true,
+					},
+				},
+			},
+		} );
+
+		if ( !session ) {
+			throw new NotFoundException( `No se encontró la sesión con ID: ${ sessionId }` );
+		}
+
+		const periodId = session.section.periodId;
+		const ticketId = ulid();
+
+		await this.queueProducer.enqueueUnenrollment( studentId, periodId, ticketId, sessionId );
+
+		return { ticketId };
+	}
+
+
+	async handleEnrollmentNotification(
+		dto : NotifyEnrollmentDto,
+	): Promise<{ success: boolean }> {
+		console.log( `[StudyPlanService] Recibida notificación del Worker para ticket ${ dto.ticketId }: acción=${ dto.actionType }, estado=${ dto.status }` );
+
+		return { success : true };
+	}
+
 }
+
+
