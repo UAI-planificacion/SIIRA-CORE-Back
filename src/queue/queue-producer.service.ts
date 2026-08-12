@@ -12,7 +12,7 @@ export class QueueProducerService {
 
 
 	async enqueueEnrollment(
-		studentId : string,
+		email     : string,
 		periodId  : string,
 		ticketId  : string,
 		sessionId : string,
@@ -20,13 +20,13 @@ export class QueueProducerService {
 		await this.queue.add(
 			'ENROLL_SECTIONS',
 			{
-				studentId,
+				email,
 				periodId,
 				ticketId,
 				sessionIds : [ sessionId ],
 			},
 			{
-				jobId    : `enroll-${ studentId }-${ sessionId }-${ ticketId }`,
+				jobId    : `enroll-${ email }-${ sessionId }-${ ticketId }`,
 				attempts : 3,
 				backoff  : {
 					type  : 'exponential',
@@ -38,7 +38,7 @@ export class QueueProducerService {
 
 
 	async enqueueUnenrollment(
-		studentId : string,
+		email     : string,
 		periodId  : string,
 		ticketId  : string,
 		sessionId : string,
@@ -46,13 +46,13 @@ export class QueueProducerService {
 		await this.queue.add(
 			'UNENROLL_SECTIONS',
 			{
-				studentId,
+				email,
 				periodId,
 				ticketId,
 				sessionIds : [ sessionId ],
 			},
 			{
-				jobId    : `unenroll-${ studentId }-${ sessionId }-${ ticketId }`,
+				jobId    : `unenroll-${ email }-${ sessionId }-${ ticketId }`,
 				attempts : 3,
 				backoff  : {
 					type  : 'exponential',

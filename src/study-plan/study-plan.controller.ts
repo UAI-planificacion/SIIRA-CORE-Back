@@ -33,23 +33,23 @@ export class StudyPlanController {
 	}
 
 
-	@Post( 'subscribe/:sessionId/:studentId' )
+	@Post( 'subscribe/:sessionId/:email' )
 	@HttpCode( HttpStatus.ACCEPTED )
 	subscribe(
 		@Param( 'sessionId' ) sessionId: string,
-		@Param( 'studentId' ) studentId: string,
+		@Param( 'email' ) email: string,
 	): Promise<{ ticketId: string }> {
-		return this.studyPlanService.subscribeStudent( studentId, sessionId );
+		return this.studyPlanService.subscribeStudent( email, sessionId );
 	}
 
 
-	@Post( 'unsubscribe/:sessionId/:studentId' )
+	@Post( 'unsubscribe/:sessionId/:email' )
 	@HttpCode( HttpStatus.ACCEPTED )
 	unsubscribe(
 		@Param( 'sessionId' ) sessionId: string,
-		@Param( 'studentId' ) studentId: string,
+		@Param( 'email' ) email: string,
 	): Promise<{ ticketId: string }> {
-		return this.studyPlanService.unsubscribeStudent( studentId, sessionId );
+		return this.studyPlanService.unsubscribeStudent( email, sessionId );
 	}
 
 
