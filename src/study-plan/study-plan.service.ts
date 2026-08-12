@@ -54,6 +54,17 @@ export class StudyPlanService {
 																email	: true,
 															},
 														},
+                                                        enrollments : {
+                                                            select : {
+                                                                ticketId: true,
+                                                                status: true
+                                                            },
+                                                            where : {
+                                                                student: {
+                                                                    email,
+                                                                }
+                                                            }
+                                                        }
 													},
 												},
 											},
@@ -153,6 +164,7 @@ export class StudyPlanService {
 							startHour	: session.module.startHour,
 							endHour		: session.module.endHour,
 						},
+                        enrollments : session.enrollments
 					})),
 				})),
 			};
@@ -183,7 +195,7 @@ export class StudyPlanService {
 
 
 	async subscribeStudent(
-		studentId : string,
+		email     : string,
 		sessionId : string,
 	): Promise<{ ticketId: string }> {
 		const session = await this.prisma.session.findUnique( {
@@ -204,14 +216,14 @@ export class StudyPlanService {
 		const periodId = session.section.periodId;
 		const ticketId = ulid();
 
-		await this.queueProducer.enqueueEnrollment( studentId, periodId, ticketId, sessionId );
+		await this.queueProducer.enqueueEnrollment( email, periodId, ticketId, sessionId );
 
 		return { ticketId };
 	}
 
 
 	async unsubscribeStudent(
-		studentId : string,
+		email     : string,
 		sessionId : string,
 	): Promise<{ ticketId: string }> {
 		const session = await this.prisma.session.findUnique( {
@@ -232,7 +244,7 @@ export class StudyPlanService {
 		const periodId = session.section.periodId;
 		const ticketId = ulid();
 
-		await this.queueProducer.enqueueUnenrollment( studentId, periodId, ticketId, sessionId );
+		await this.queueProducer.enqueueUnenrollment( email, periodId, ticketId, sessionId );
 
 		return { ticketId };
 	}
