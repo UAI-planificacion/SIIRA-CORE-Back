@@ -2,12 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { ulid }                          from 'ulid';
 
+import {
+	EnrollmentActionType,
+	EnrollmentNotifyStatus,
+	NotifyEnrollmentDto,
+}                                       from './dto/notify-enrollment.dto';
+import { SseService }                   from '@sse/sse.service';
+import { EnumAction, Entity }           from '@sse/sse.model';
 import { PrismaService }                from '@prisma/prisma.service';
 import { IStudentCurriculumResponse }   from '@study-plan/interfaces/student.interface';
 import { ISubject }                     from '@study-plan/interfaces/subject.interface';
 import { ISemesterGroup }               from '@study-plan/interfaces/semester-group.interface';
 import { QueueProducerService }         from '@queue/queue-producer.service';
-import { NotifyEnrollmentDto }          from './dto/notify-enrollment.dto';
 
 
 @Injectable()
@@ -16,6 +22,7 @@ export class StudyPlanService {
 	constructor(
 		private readonly prisma        : PrismaService,
 		private readonly queueProducer : QueueProducerService,
+		private readonly sseService    : SseService,
 	) {}
 
 
@@ -255,9 +262,37 @@ export class StudyPlanService {
 	): Promise<{ success: boolean }> {
 		console.log( `[StudyPlanService] Recibida notificación del Worker para ticket ${ dto.ticketId }: acción=${ dto.actionType }, estado=${ dto.status }` );
 
+		const statusMap: Record<EnrollmentNotifyStatus, string> = {
+			[ EnrollmentNotifyStatus.SUCCESS ] : 'éxito',
+			[ EnrollmentNotifyStatus.FAILED  ] : 'fallo',
+			[ EnrollmentNotifyStatus.PARTIAL ] : 'éxito parcial',
+		};
+
+		const actionWord = dto.actionType === EnrollmentActionType.ENROLL ? 'inscripción' : 'desinscripción';
+		const statusWord = statusMap[ dto.status ] || 'estado desconocido';
+		const ssecSuffix = dto.ssec ? ` - SSEC: ${ dto.ssec }` : '';
+		const msgText    = `La ${ actionWord } a la sesión ${ dto.sessionId } se realizó con ${ statusWord }${ ssecSuffix }`;
+
+		const sseAction = dto.actionType === EnrollmentActionType.ENROLL
+			? EnumAction.ENROLL
+			: EnumAction.UNENROLL;
+
+		const eventPayload = {
+			message : {
+				ticketId  : dto.ticketId,
+				studentId : dto.studentId,
+				sessionId : dto.sessionId,
+				status    : dto.status,
+				message   : msgText,
+			},
+			action  : sseAction,
+			entity  : Entity.ENROLLMENT,
+		};
+
+		this.sseService.emitEvent( eventPayload );
+
 		return { success : true };
 	}
-
 }
 
 
