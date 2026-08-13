@@ -5,6 +5,7 @@ import { PrismaModule }         from './prisma/prisma.module';
 import { SeedModule }           from './seed/seed.module';
 import { PeriodsModule }        from './periods/periods.module';
 import { ProcessConfigsModule } from './process-configs/process-configs.module';
+import { SseModule }            from './sse/sse.module';
 import { StudyPlanModule }      from './study-plan/study-plan.module';
 
 
@@ -14,7 +15,8 @@ import { StudyPlanModule }      from './study-plan/study-plan.module';
         SeedModule,
         PeriodsModule,
         ProcessConfigsModule,
-        StudyPlanModule
+        StudyPlanModule,
+        SseModule
     ],
     controllers     : [AppController],
     providers       : [],
