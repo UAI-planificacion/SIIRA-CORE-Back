@@ -4,16 +4,19 @@ import {
 	Post,
 	Param,
 	Query,
+    Headers,
 	Body,
 	HttpCode,
 	HttpStatus,
 	ParseBoolPipe,
+    UnauthorizedException,
 }                               from '@nestjs/common';
 import { ApiQuery, ApiTags }    from '@nestjs/swagger';
 
 import { StudyPlanService }             from '@study-plan/study-plan.service';
 import { IStudentCurriculumResponse }   from '@study-plan/interfaces/student.interface';
 import { NotifyEnrollmentDto }          from './dto/notify-enrollment.dto';
+import { ENVS }                         from '@app/config/envs';
 
 
 @ApiTags( 'Study Plan' )
@@ -56,10 +59,14 @@ export class StudyPlanController {
 	@Post( 'notify-enrollment' )
 	@HttpCode( HttpStatus.OK )
 	notifyEnrollment(
+        @Headers('X-Notification-Secret') secret: string,
 		@Body() notifyDto: NotifyEnrollmentDto,
 	): Promise<{ success: boolean }> {
+        if ( secret !== ENVS.NOTIFICATION.SECRET_KEY ) {
+            throw new UnauthorizedException( 'Invalid notification secret key' );
+        }
+
 		return this.studyPlanService.handleEnrollmentNotification( notifyDto );
 	}
-
 
 }
