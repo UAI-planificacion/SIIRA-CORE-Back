@@ -10,6 +10,8 @@ interface EnvVars {
 	REDIS_PORT      : number;
 	REDIS_PASSWORD  : string;
 	REDIS_TLS       : boolean;
+
+    NOTIFICATION_SECRET_KEY: string;
 }
 
 
@@ -21,6 +23,8 @@ const envsSchema = joi.object({
 	REDIS_PORT      : joi.number().default( 6379 ),
 	REDIS_PASSWORD  : joi.string().allow( '' ).default( '' ),
 	REDIS_TLS       : joi.boolean().default( false ),
+
+    NOTIFICATION_SECRET_KEY: joi.string().required(),
 })
 .unknown( true );
 
@@ -44,5 +48,9 @@ export const ENVS = {
         PORT      : envVars.REDIS_PORT,
         PASSWORD  : envVars.REDIS_PASSWORD,
         TLS       : envVars.REDIS_TLS,
-    }
+    },
+
+    NOTIFICATION : {
+        SECRET_KEY: envVars.NOTIFICATION_SECRET_KEY,
+    },
 }
