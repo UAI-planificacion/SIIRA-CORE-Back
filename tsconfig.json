@@ -27,6 +27,7 @@
 			"@generated/*"	: [ "./src/generated/*" ],
 			"@study-plan/*" : [ "./src/study-plan/*" ],
 			"@queue/*"      : [ "./src/queue/*" ],
+			"@sse/*"        : [ "./src/sse/*" ],
         }
     }
 }
