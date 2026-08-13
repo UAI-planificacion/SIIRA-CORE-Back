@@ -1,4 +1,4 @@
-import { IsString, IsArray, IsEnum } from 'class-validator';
+import { IsString, IsEnum, IsOptional } from 'class-validator';
 
 
 export enum EnrollmentActionType {
@@ -22,14 +22,16 @@ export class NotifyEnrollmentDto {
 	@IsString()
 	studentId  : string;
 
-	@IsArray()
-	@IsString( { each: true } )
-	sessionIds : string[];
+	@IsString()
+	sessionId  : string;
 
 	@IsEnum( EnrollmentActionType )
 	actionType : EnrollmentActionType;
 
 	@IsEnum( EnrollmentNotifyStatus )
 	status     : EnrollmentNotifyStatus;
+
+	@IsString()
+	ssec: string;
 
 }
