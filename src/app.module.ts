@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AppController }        from './app.controller';
+import { CacheModule }          from './cache/cache.module';
 import { PrismaModule }         from './prisma/prisma.module';
 import { SeedModule }           from './seed/seed.module';
 import { PeriodsModule }        from './periods/periods.module';
@@ -16,9 +17,10 @@ import { StudyPlanModule }      from './study-plan/study-plan.module';
         PeriodsModule,
         ProcessConfigsModule,
         StudyPlanModule,
-        SseModule
+        SseModule,
+        CacheModule
     ],
-    controllers     : [AppController],
+    controllers     : [ AppController ],
     providers       : [],
 })
 export class AppModule { }

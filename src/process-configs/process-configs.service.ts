@@ -3,18 +3,27 @@ import {
 	ConflictException,
 	NotFoundException,
 	BadRequestException,
+	Logger,
+	ServiceUnavailableException,
 } from '@nestjs/common';
 
-import { PrismaService } from '@prisma/prisma.service';
-import { CreateProcessConfigDto } from './dto/create-process-config.dto';
-import { UpdateProcessConfigDto } from './dto/update-process-config.dto';
-import { ProcessConfig }          from '@generated/prisma/client';
+import { PrismaService }           from '@prisma/prisma.service';
+import { CreateProcessConfigDto }  from './dto/create-process-config.dto';
+import { UpdateProcessConfigDto }  from './dto/update-process-config.dto';
+import { ProcessConfig }            from '@generated/prisma/client';
+import { RedisCacheWarmupService } from '../cache/redis-cache-warmup.service';
 
 
 @Injectable()
 export class ProcessConfigsService {
 
-	constructor( private readonly prisma: PrismaService ) {}
+	private readonly logger: Logger = new Logger( ProcessConfigsService.name );
+
+
+	constructor(
+		private readonly prisma                  : PrismaService,
+		private readonly redisCacheWarmupService : RedisCacheWarmupService,
+	) {}
 
 
 	async create( createProcessConfigDto: CreateProcessConfigDto ) {
@@ -41,15 +50,23 @@ export class ProcessConfigsService {
 			createProcessConfigDto.enrollmentEndDate,
 		);
 
-		return this.prisma.processConfig.create( {
-			data: {
-				periodId            : createProcessConfigDto.periodId,
-				planningStartDate   : createProcessConfigDto.planningStartDate,
-				planningEndDate     : createProcessConfigDto.planningEndDate,
-				enrollmentStartDate : createProcessConfigDto.enrollmentStartDate,
-				enrollmentEndDate   : createProcessConfigDto.enrollmentEndDate,
-			}
-		} );
+		await this.redisCacheWarmupService.ping();
+
+		return this.prisma.$transaction( async ( tx ) => {
+			const config = await tx.processConfig.create({
+				data : {
+					periodId            : createProcessConfigDto.periodId,
+					planningStartDate   : createProcessConfigDto.planningStartDate,
+					planningEndDate     : createProcessConfigDto.planningEndDate,
+					enrollmentStartDate : createProcessConfigDto.enrollmentStartDate,
+					enrollmentEndDate   : createProcessConfigDto.enrollmentEndDate,
+				},
+			});
+
+			await this.redisCacheWarmupService.syncPeriodQuotaToRedis( config.periodId );
+
+			return config;
+		});
 	}
 
 
@@ -143,16 +160,30 @@ export class ProcessConfigsService {
 			merged.enrollmentEndDate,
 		);
 
-		return this.prisma.processConfig.update( {
-			where : { id },
-			data  : {
-				periodId            : updateProcessConfigDto.periodId,
-				planningStartDate   : updateProcessConfigDto.planningStartDate,
-				planningEndDate     : updateProcessConfigDto.planningEndDate,
-				enrollmentStartDate : updateProcessConfigDto.enrollmentStartDate,
-				enrollmentEndDate   : updateProcessConfigDto.enrollmentEndDate,
+		await this.redisCacheWarmupService.ping();
+
+		const oldPeriodId = processConfig.periodId;
+
+		return this.prisma.$transaction( async ( tx ) => {
+			const config = await tx.processConfig.update({
+				where : { id },
+				data  : {
+					periodId            : updateProcessConfigDto.periodId,
+					planningStartDate   : updateProcessConfigDto.planningStartDate,
+					planningEndDate     : updateProcessConfigDto.planningEndDate,
+					enrollmentStartDate : updateProcessConfigDto.enrollmentStartDate,
+					enrollmentEndDate   : updateProcessConfigDto.enrollmentEndDate,
+				},
+			});
+
+			await this.redisCacheWarmupService.syncPeriodQuotaToRedis( config.periodId );
+
+			if ( oldPeriodId !== config.periodId ) {
+				await this.redisCacheWarmupService.deletePeriodQuotasFromRedis( oldPeriodId );
 			}
-		} );
+
+			return config;
+		});
 	}
 
 
@@ -169,9 +200,17 @@ export class ProcessConfigsService {
 			throw new BadRequestException( `No se puede eliminar la configuración del proceso porque su estado actual es ${ processConfig.status }. Solo se puede eliminar en estado PENDING o CLOSED.` );
 		}
 
-		return this.prisma.processConfig.delete( {
-			where: { id }
-		} );
+		await this.redisCacheWarmupService.ping();
+
+		return this.prisma.$transaction( async ( tx ) => {
+			const config = await tx.processConfig.delete({
+				where : { id },
+			});
+
+			await this.redisCacheWarmupService.deletePeriodQuotasFromRedis( config.periodId );
+
+			return config;
+		});
 	}
 
 
